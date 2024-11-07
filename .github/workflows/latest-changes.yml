@@ -19,11 +19,14 @@ on:
 jobs:
   latest-changes:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.1.2
         with:
-          token: ${{ secrets.ORG_REPO_TOKEN }}
-      - uses: khulnasoft/latest-changes@0.3.1
+          # To allow latest-changes to commit to master
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker://ghcr.io/khulnasoft/latest-changes:0.3.0
       # - uses: khulnasoft/latest-changes@main
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
