@@ -412,6 +412,8 @@ It will also run after each comment or label added, with the specific issue that
 
 ### Latest Changes
 
+* Update latest-changes.yml. PR [#3](https://github.com/khulnasoft/issue-manager/pull/3) by [@NxPKG](https://github.com/NxPKG).
+
 ### 0.5.1
 
 #### Features
