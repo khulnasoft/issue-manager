@@ -20,10 +20,11 @@ jobs:
   latest-changes:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.1.2
         with:
+          # To allow latest-changes to commit to master
           token: ${{ secrets.ORG_REPO_TOKEN }}
-      - uses: khulnasoft/latest-changes@0.3.1
+      - uses: docker://ghcr.io/khulnasoft/latest-changes:0.3.0
       # - uses: khulnasoft/latest-changes@main
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
