@@ -412,6 +412,7 @@ It will also run after each comment or label added, with the specific issue that
 
 ### Latest Changes
 
+* ⬆ Bump actions/checkout from 4.1.2 to 4.2.2. PR [#4](https://github.com/khulnasoft/issue-manager/pull/4) by [@dependabot[bot]](https://github.com/apps/dependabot).
 * Update latest-changes.yml. PR [#3](https://github.com/khulnasoft/issue-manager/pull/3) by [@NxPKG](https://github.com/NxPKG).
 
 ### 0.5.1
