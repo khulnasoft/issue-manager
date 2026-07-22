@@ -7,7 +7,7 @@ from github import Github
 from github.Issue import Issue
 from github.IssueEvent import IssueEvent
 from pydantic import BaseModel, SecretStr, validator
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict, SettingsConfigDict
 
 
 class KeywordMeta(BaseModel):
@@ -20,6 +20,8 @@ class KeywordMeta(BaseModel):
 
 
 class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_ignore_empty=True)
+    
     input_config: Dict[str, KeywordMeta]
     github_repository: str
     input_token: SecretStr
