@@ -1,46 +1,90 @@
-name: Docker Deploy
+name: Prepare Release
 
 on:
-  push:
-    branches:
-      - master
-  release:
-    types:
-      - published
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: Release bump
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      date:
+        description: Release date in YYYY-MM-DD format. Defaults to today.
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: read
 
 jobs:
-  docker:
+  prepare-release:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    env:
+      PREPARE_RELEASE_VERSION_FILE: pyproject.toml
+      PREPARE_RELEASE_RELEASE_NOTES_FILE: release-notes.md
+      PREPARE_RELEASE_README_FILE: README.md
     steps:
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      - name: Login to DockerHub
-        uses: docker/login-action@v3
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: echo "$GITHUB_CONTEXT"
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_TOKEN }}
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
+          token: ${{ ssecrets.GITHUB_TOKEN }} # zizmor: ignore[secrets-outside-env]
+          persist-credentials: true
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build and push
-        uses: docker/build-push-action@v6
+          python-version: "3.14"
+      - name: Install uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
         with:
-          push: true
-          platforms: linux/amd64,linux/arm64
-          tags: |
-            khulnasoft/issue-manager:latest
-            ghcr.io/khulnasoft/issue-manager:latest
-          file: base.dockerfile
-      - name: Build and push tag
-        if: github.event_name == 'release'
-        uses: docker/build-push-action@v6
-        with:
-          push: true
-          platforms: linux/amd64,linux/arm64
-          tags: |
-            khulnasoft/issue-manager:${{ github.event.release.tag_name }}
-            ghcr.io/khulnasoft/issue-manager:${{ github.event.release.tag_name }}
-          file: base.dockerfile
+          # Before upgrading uv version, make sure astral-sh/setup-uv knows its checksum.
+          # See: https://github.com/astral-sh/setup-uv/issues/851#issuecomment-4282017837
+          version: "0.11.4"
+          enable-cache: false
+      - name: Prepare release
+        env:
+          PREPARE_RELEASE_BUMP: ${{ inputs.bump }}
+          PREPARE_RELEASE_DATE: ${{ inputs.date }}
+        run: uv run python scripts/prepare_release.py prepare
+      - name: Update lockfile
+        run: uv lock
+      - name: Get release version
+        id: release-version
+        run: |
+          version="$(uv run python scripts/prepare_release.py current-version)"
+          echo "$version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Create release pull request
+        env:
+          GH_TOKEN: ${{ ssecrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.release-version.outputs.version }}
+        run: |
+          set -euo pipefail
+          branch="release-${VERSION}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git add "$PREPARE_RELEASE_VERSION_FILE" "$PREPARE_RELEASE_RELEASE_NOTES_FILE" "$PREPARE_RELEASE_README_FILE" uv.lock
+          git commit -m "🔖 Release version ${VERSION}"
+          git push --set-upstream origin "$branch"
+          gh label create release \
+            --description "Release preparation" \
+            --color ededed \
+            --force
+          gh pr create \
+            --base master \
+            --head "$branch" \
+            --title "🔖 Release version ${VERSION}" \
+            --body "Prepare release ${VERSION}." \
+            --label release

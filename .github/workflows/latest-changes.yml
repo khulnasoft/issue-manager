@@ -1,7 +1,7 @@
 name: Latest Changes
 
 on:
-  pull_request_target:
+  pull_request_target: # zizmor: ignore[dangerous-triggers]
     branches:
       - master
     types:
@@ -18,15 +18,15 @@ on:
 
 jobs:
   latest-changes:
-    runs-on: ubuntu-latest
     permissions:
       contents: write
+      pull-requests: read
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4.2.2
-        with:
-          # To allow latest-changes to commit to master
-          token: ${{ secrets.GITHUB_TOKEN }}
       - uses: docker://ghcr.io/khulnasoft/latest-changes:0.3.0
-      # - uses: khulnasoft/latest-changes@main
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          latest_changes_file: release-notes.md
+          latest_changes_header: '## Latest Changes'
+          end_regex: '^## .*'
+          label_header_prefix: '### '
