@@ -1,3 +1,6 @@
+> **⚠️ This repository has moved.** This action is now maintained in the [khulnasoft/actions](https://github.com/khulnasoft/actions) monorepo.
+> New releases will be published from the monorepo. Existing tags and images remain available.
+
 # Issue Manager
 
 Automatically close issues or pull requests that have a **label**, after a **custom delay**, if no one replies back.
